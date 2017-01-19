@@ -94,7 +94,7 @@ def short(name, level):
             for item in f:
                 item = item.rstrip('\n')
                 name = name.replace(item, '')
-                if len(item) >= 3:
+                if len(item) >= 3 and name.replace(item.rstrip('族\n'), '') != '':
                     name = name.replace(item.rstrip('族\n'), '')
     return name
 
@@ -111,16 +111,18 @@ for province in geo_dict:
 for province in geo_dict:
     for city in geo_dict[province]:
         for area in geo_dict[province][city]:
-            geo_dict_short[short(province, 'province')][short(city, 'city')].append(short(area, 'area'))
-
+            if short(area, 'area') != '':
+                geo_dict_short[short(province, 'province')][short(city, 'city')].append(short(area, 'area'))
+            else:
+                geo_dict_short[short(province, 'province')][short(city, 'city')].append(area)
 with open('./geo_dict_short.txt', 'w') as f:
     f.write(repr(geo_dict_short))
 
 # print
-for province in geo_dict_short:
-    print('*'*10)
-    print(province)
-    for city in geo_dict_short[province]:
-        print(' '*5 + city)
-        for area in geo_dict_short[province][city]:
-            print(' '*10 + area)
+# for province in geo_dict_short:
+    # print('*'*10)
+    # print(province)
+    # for city in geo_dict_short[province]:
+        # print(' '*5 + city)
+        # for area in geo_dict_short[province][city]:
+            # print(' '*10 + area)
