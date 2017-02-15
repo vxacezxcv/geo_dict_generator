@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
-# File: create_hierarchical_dict.py (python3)
+# File: create_geo_dict.py (python3)
 # Author: Bowen LU <Bowen.Lu@mail.com>
 # Date: 15.01.2017
 
 import re
 from collections import OrderedDict
+
+
+city_skipwords = ['市辖区', '市', '县', '省直辖行政单位', '省直辖县级行政单位']
+area_skipwords = ['市辖区']
 
 # load province, city and area information
 province_dict = OrderedDict()
@@ -43,6 +47,8 @@ for cityId in city_dict:
     cityName = city_dict[cityId][0]
     provinceId = city_dict[cityId][1]
     provinceName = province_dict[provinceId]
+    if cityName in city_skipwords:
+        cityName = provinceName
     geo_dict[provinceName][cityName] = []
 
 # insert areas to geo_dict[province][city]
@@ -52,13 +58,19 @@ for areaId in area_dict:
     cityName = city_dict[cityId][0]
     provinceId = city_dict[cityId][1]
     provinceName = province_dict[provinceId]
+    if cityName in city_skipwords:
+        cityName = provinceName
+    if areaName in area_skipwords:
+        areaName = cityName
     geo_dict[provinceName][cityName].append(areaName)
 
 with open('./geo_dict.txt', 'w') as f:
     f.write(repr(geo_dict))
+print('>> ./geo_dict.txt generated.')
 
 # geo_dict_short
 geo_dict_short = OrderedDict()
+
 
 
 # shorten functions
@@ -72,9 +84,8 @@ def short(name, level):
             name = name.replace(keyword, '')
     elif level == 'city':
         keywords = ['自治州', '地区', '市', '盟']
-        skipwords = ['市辖区', '县', '省直辖行政单位', '省直辖县级行政单位']
         for keyword in keywords:
-            if name not in skipwords and len(name) >= 3:
+            if name not in city_skipwords and len(name) >= 3:
                 if re.compile('.*'+keyword+'$').match(name):
                     name = name.replace(keyword, '')
         with open('./ethnic_dict.txt', 'r') as f:
@@ -85,9 +96,8 @@ def short(name, level):
                     name = name.replace(item.rstrip('族\n'), '')
     elif level == 'area':
         keywords = ['自治县', '矿区', '区', '县', '市']
-        skipwords = ['市辖区']
         for keyword in keywords:
-            if name not in skipwords and len(name) >= 3:
+            if name not in area_skipwords and len(name) >= 3:
                 if re.compile('.*'+keyword+'$').match(name):
                     name = name.replace(keyword, '')
         with open('./ethnic_dict.txt', 'r') as f:
@@ -115,8 +125,23 @@ for province in geo_dict:
                 geo_dict_short[short(province, 'province')][short(city, 'city')].append(short(area, 'area'))
             else:
                 geo_dict_short[short(province, 'province')][short(city, 'city')].append(area)
+
 with open('./geo_dict_short.txt', 'w') as f:
+    # f.write('exec("from collections import OrderedDict"),')
     f.write(repr(geo_dict_short))
+print('>> ./geo_dict_short.txt generated.')
+
+# generate list file for jieba segmentation.
+with open('./geo_dict_short_jieba.txt', 'w') as f:
+    for province in geo_dict_short:
+        f.write('%s 250 Loc\n' % province)
+        for city in geo_dict_short[province]:
+            if city not in city_skipwords:
+                f.write('%s 250 Loc\n' % city)
+            for area in geo_dict_short[province][city]:
+                if area not in area_skipwords:
+                    f.write('%s 250 Loc\n' % area)
+print('>> ./geo_dict_short_jieba.txt generated.')
 
 # print
 # for province in geo_dict_short:
